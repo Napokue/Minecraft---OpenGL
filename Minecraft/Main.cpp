@@ -5,6 +5,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+float randomFloat(float a, float b);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -17,7 +18,7 @@ const char* vertexShaderSource = "#version 460 core\n"
 "out vec3 ourColor;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
 "   ourColor = aColor;\n"
 "}\0";
 
@@ -31,10 +32,10 @@ const char* fragmentShaderSource = "#version 460 core\n"
 
 const char* yellowFragmentShaderSource = "#version 460 core\n"
 "out vec4 FragColor;\n"
-"uniform vec4 aColor;\n"
+"in vec3 ourColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = aColor;\n"
+"   FragColor = vec4(ourColor, 1.0f);\n"
 "}\n\0";
 
 int main()
@@ -153,9 +154,33 @@ int main()
         -0.5f,  0.5f, 0.0f   // top left 
     };
 
-    unsigned int VBOs[2], VAOs[2];
+    float colors[9];
+    bool addColorFloats[9];
+
+    srand(2);
+
+    int length = sizeof(colors) / sizeof(float);
+    for (int i = 0; i < length; i++)
+    {
+        float currentColor = (sin(rand() % 256) / 2.0f) + 0.5f;
+
+        if (currentColor < 0.0f)
+        {
+            currentColor = 0.0f;
+            addColorFloats[i] = true;
+        }
+        else if (currentColor >= 1.0f)
+        {
+            currentColor = 1.0f;
+            addColorFloats[i] = false;
+        }
+
+        colors[i] = currentColor;
+    }
+    
+    unsigned int VBOs[3], VAOs[2];
     glGenVertexArrays(2, VAOs);
-    glGenBuffers(2, VBOs);
+    glGenBuffers(3, VBOs);
 
     glBindVertexArray(VAOs[0]);
 
@@ -175,10 +200,15 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[2]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), &colors, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(1);
+
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    int uniformLocation = glGetUniformLocation(yellowShaderProgram, "aColor");
+    //int uniformLocation = glGetUniformLocation(yellowShaderProgram, "aColor");
 
     // render loop
     // -----------
@@ -198,12 +228,46 @@ int main()
         glBindVertexArray(VAOs[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        float timeValue = glfwGetTime();
-        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        glUseProgram(yellowShaderProgram);
-        glUniform4f(uniformLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        srand(2);
+        for (int i = 0; i < length; i++)
+        {
+            float currentColor = colors[i];
 
+            //Calculate random float number
+            float modifyRange = randomFloat(0.01f, 0.03f);
+
+            if (addColorFloats[i])
+            {
+                currentColor += modifyRange;
+            }
+            else
+            {
+                currentColor -= modifyRange;
+            }
+
+            if (currentColor < 0.0f)
+            {
+                currentColor = 0.0f;
+                addColorFloats[i] = true;
+            }
+            else if (currentColor >= 1.0f)
+            {
+                currentColor = 1.0f;
+                addColorFloats[i] = false;
+            }
+
+            colors[i] = currentColor;
+
+            //colors[i] = (sin((rand() % 256) + timeValue) / 2.0f) + 0.5f; // Complete randomness
+        }
+
+        glUseProgram(yellowShaderProgram);
+        //glUniform4f(uniformLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        
+        
         glBindVertexArray(VAOs[1]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(colors), &colors);
+
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -240,4 +304,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+float randomFloat(float a, float b) 
+{
+    float random = ((float)rand()) / (float)RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
 }
