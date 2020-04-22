@@ -158,7 +158,6 @@ int main()
     bool addColorFloats[9];
 
     srand(2);
-
     int length = sizeof(colors) / sizeof(float);
     for (int i = 0; i < length; i++)
     {
@@ -228,7 +227,7 @@ int main()
         glBindVertexArray(VAOs[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        srand(2);
+        srand(glfwGetTime() + rand() % 250);
         for (int i = 0; i < length; i++)
         {
             float currentColor = colors[i];
