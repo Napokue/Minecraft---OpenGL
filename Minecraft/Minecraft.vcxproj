@@ -142,10 +142,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Metadata\Libraries\glad.c" />
+    <ClCompile Include="Header Files\stb_image_init.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header Files\Shaders.h" />
+    <ClInclude Include="Header Files\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Fragment.frag">
@@ -154,6 +156,11 @@
     <None Include="Shaders\Vertex.vert">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Textures\wall.jpg">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Image>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

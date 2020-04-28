@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{1d63279d-7e73-483b-818b-3832c6f8fd1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{eea236f3-5e18-4754-85b6-371c885bd51e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -24,9 +27,15 @@
     <ClCompile Include="..\..\Metadata\Libraries\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Header Files\stb_image_init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header Files\Shaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Header Files\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -37,5 +46,10 @@
     <None Include="Shaders\Vertex.vert">
       <Filter>Shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Textures\wall.jpg">
+      <Filter>Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

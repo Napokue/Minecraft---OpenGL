@@ -1,0 +1,2 @@
+Rendering: Voxel
+Altitude: Heat map
