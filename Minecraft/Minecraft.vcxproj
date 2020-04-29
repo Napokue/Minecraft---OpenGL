@@ -158,6 +158,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Textures\awesomeface.png">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Image>
     <Image Include="Textures\wall.jpg">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Image>
