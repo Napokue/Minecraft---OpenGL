@@ -18,6 +18,9 @@ void processInput(GLFWwindow* window, float& alpha);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+// block 1
+float position = 0.0f;
+
 int main()
 {
     // glfw: initialize and configure
@@ -52,6 +55,7 @@ int main()
     }
 
     Shader ourShader("Shaders/Vertex.vert", "Shaders/Fragment.frag");
+    Shader blockShader("Shaders/Block.vert", "Shaders/Fragment.frag");
     
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -69,9 +73,11 @@ int main()
         1, 2, 3  // second triangle
     };
 
-    unsigned int VBO, VAO, EBO;
+    unsigned int VBO, VAO, EBO, VBOBlock1, VAOBlock1;
     glGenVertexArrays(1, &VAO);
+    glGenVertexArrays(1, &VAOBlock1);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &VBOBlock1);
     glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
@@ -142,10 +148,25 @@ int main()
     // no longer needed to flip the images that will load
     stbi_set_flip_vertically_on_load(false);
 
+
+    const float playerVertices[] = {
+        // positions       
+         -0.99f, 0.1f, 0.0f,
+         -0.95f, -0.1f, 0.0f
+    };
+
+    glBindVertexArray(VAOBlock1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBOBlock1);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(playerVertices), playerVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    ourShader.use();
+    //ourShader.use();
 
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
@@ -153,7 +174,11 @@ int main()
     float alpha = 0.2f;
 
     unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+    unsigned int blockMovementLoc = glGetUniformLocation(blockShader.ID, "movementTransform");
 
+    float translationOffset = 0.5f;
+
+    bool rightDirection = false;
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -178,13 +203,46 @@ int main()
         ourShader.setFloat("alpha", alpha);
 
         glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+
+
+        if (rightDirection)
+        {
+            translationOffset += 0.01f;
+        }
+        else
+        {
+            translationOffset -= 0.01f;
+        }
+
+        if (translationOffset <= -0.5f)
+        {
+            rightDirection = true;
+        }
+        else if (translationOffset >= 0.5f)
+        {
+            rightDirection = false;
+        }
+
+        
+        trans = glm::translate(trans, glm::vec3(translationOffset, 0.0f, 0.0f));
+
         trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 
+        ourShader.use();
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-
+        
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+        blockShader.use();
+
+        glUniform1f(blockMovementLoc, position);
+
+        
+        glBindVertexArray(VAOBlock1);
+        glLineWidth(50.0f);
+        glDrawArrays(GL_LINES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -215,10 +273,12 @@ void processInput(GLFWwindow* window, float& alpha)
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         alpha += 0.01f;
+        position += 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         alpha -= 0.01f;
+        position -= 0.01f;
     }
 }
 

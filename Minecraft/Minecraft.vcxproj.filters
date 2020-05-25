@@ -30,6 +30,9 @@
     <ClCompile Include="Header Files\stb_image_init.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Shaders\Block.vert">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header Files\Shaders.h">
