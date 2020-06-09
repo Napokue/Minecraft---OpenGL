@@ -10,7 +10,7 @@ uniform float movementTransform;
 
 void main()
 {
-   gl_Position = vec4(aPos.x, movementTransform, aPos.z, 1.0f);
+   gl_Position = vec4(aPos.x, aPos.y + movementTransform, aPos.z, 1.0f);
    ourColor = ourColor;
    TexCoord = aTexCoord;
 }

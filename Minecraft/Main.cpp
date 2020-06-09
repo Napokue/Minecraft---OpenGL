@@ -151,8 +151,8 @@ int main()
 
     const float playerVertices[] = {
         // positions       
-         -0.99f, 0.1f, 0.0f,
-         -0.95f, -0.1f, 0.0f
+         -0.98f, -0.2f, 0.0f,
+         -0.98f, 0.2f, 0.0f,
     };
 
     glBindVertexArray(VAOBlock1);
@@ -234,15 +234,12 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
         blockShader.use();
 
         glUniform1f(blockMovementLoc, position);
-
-        
         glBindVertexArray(VAOBlock1);
-        glLineWidth(50.0f);
-        glDrawArrays(GL_LINES, 0, 6);
+        glLineWidth(10.0f);
+        glDrawArrays(GL_LINES, 0, 2);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
