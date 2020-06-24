@@ -11,6 +11,21 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
+
+struct Player {
+public:
+    float playerVertices[6];
+
+    Player(float startLocation)
+        : playerVertices{
+        // positions       
+         startLocation, -0.2f, 0.0f,
+         startLocation, 0.2f, 0.0f,
+        } 
+    {}
+};
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window, float& alpha);
 
@@ -19,7 +34,8 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // block 1
-float position = 0.0f;
+float positionBlock1 = 0.0f;
+float positionBlock2 = 0.0f;
 
 int main()
 {
@@ -73,11 +89,13 @@ int main()
         1, 2, 3  // second triangle
     };
 
-    unsigned int VBO, VAO, EBO, VBOBlock1, VAOBlock1;
+    unsigned int VBO, VAO, EBO, VBOBlock1, VBOBlock2, VAOBlock1, VAOBlock2;
     glGenVertexArrays(1, &VAO);
     glGenVertexArrays(1, &VAOBlock1);
+    glGenVertexArrays(1, &VAOBlock2);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &VBOBlock1);
+    glGenBuffers(1, &VBOBlock2);
     glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
@@ -148,6 +166,9 @@ int main()
     // no longer needed to flip the images that will load
     stbi_set_flip_vertically_on_load(false);
 
+    Player player1 = Player(-0.98f);
+
+    Player player2 = Player(0.98f);
 
     const float playerVertices[] = {
         // positions       
@@ -156,12 +177,20 @@ int main()
     };
 
     glBindVertexArray(VAOBlock1);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBOBlock1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(playerVertices), playerVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(player1.playerVertices), player1.playerVertices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    glBindVertexArray(VAOBlock2);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBOBlock2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(player2.playerVertices), player2.playerVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -236,8 +265,13 @@ int main()
 
         blockShader.use();
 
-        glUniform1f(blockMovementLoc, position);
+        glUniform1f(blockMovementLoc, positionBlock1);
         glBindVertexArray(VAOBlock1);
+        glLineWidth(10.0f);
+        glDrawArrays(GL_LINES, 0, 2);
+
+        glUniform1f(blockMovementLoc, positionBlock2);
+        glBindVertexArray(VAOBlock2);
         glLineWidth(10.0f);
         glDrawArrays(GL_LINES, 0, 2);
 
@@ -270,12 +304,20 @@ void processInput(GLFWwindow* window, float& alpha)
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         alpha += 0.01f;
-        position += 0.01f;
+        positionBlock1 += 0.01f;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         alpha -= 0.01f;
-        position -= 0.01f;
+        positionBlock1 -= 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        positionBlock2 += 0.01f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        positionBlock2 -= 0.01f;
     }
 }
 
@@ -287,3 +329,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
+
+
+
+
