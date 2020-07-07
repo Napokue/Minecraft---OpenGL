@@ -10,21 +10,74 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
-
 struct Player {
+private:
+    const float locationBoundsOffset = 0.2f;
+    int upKey;
+    int downKey;
+
 public:
     const float playerWidth = 10.0f;
     float playerVertices[6];
     float playerLocation = 0.0f;
 
-    Player(float startLocation)
+    Player(float startLocation, int glfwUpKey, int glfwDownKey)
         : playerVertices{
         // positions       
-         startLocation, -0.2f, 0.0f,
-         startLocation, 0.2f, 0.0f,
-        }
+         startLocation, -locationBoundsOffset, 0.0f,
+         startLocation, locationBoundsOffset, 0.0f,
+        }, 
+        upKey(glfwUpKey),
+        downKey(glfwDownKey)
     {}
+
+    int GetUpKey()
+    {
+        return upKey;
+    }
+
+    int GetDownKey()
+    {
+        return downKey;
+    }
+
+    float GetUpLocation()
+    {
+        return playerLocation + locationBoundsOffset;
+    }
+    
+    float GetDownLocation()
+    {
+        return playerLocation - locationBoundsOffset;
+    }
+
+    float MoveUp(float amount)
+    {
+        if (GetUpLocation() >= 1.0f)
+        {
+            playerLocation = 1.0f - locationBoundsOffset;
+        }
+        else
+        {
+            playerLocation += amount;
+        }
+
+        return GetUpLocation();
+    }
+
+    float MoveDown(float amount)
+    {
+        if (GetDownLocation() <= -1.0f)
+        {
+            playerLocation = -1.0f + locationBoundsOffset;
+        }
+        else
+        {
+            playerLocation -= amount;
+        }
+
+        return GetDownLocation();
+    }
 };
 
 class PlayerRenderer {
@@ -61,19 +114,32 @@ public:
         glLineWidth(player.playerWidth);
         glDrawArrays(GL_LINES, 0, 2);
     }
+
+    void ProcessInput(GLFWwindow* window)
+    {
+        if (glfwGetKey(window, player.GetUpKey()) == GLFW_PRESS)
+        {
+            player.MoveUp(0.01f);
+        }
+        if (glfwGetKey(window, player.GetDownKey()) == GLFW_PRESS)
+        {
+            player.MoveDown(0.01f);
+        }
+    }
+
+    ~PlayerRenderer()
+    {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+    }
 };
 
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window, float& alpha);
+void processInput(GLFWwindow* window);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-// block 1
-float positionBlock1 = 0.0f;
-float positionBlock2 = 0.0f;
 
 int main()
 {
@@ -127,13 +193,9 @@ int main()
         1, 2, 3  // second triangle
     };
 
-    unsigned int VBO, VAO, EBO, VBOBlock1, VBOBlock2, VAOBlock1, VAOBlock2;
+    unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
-    glGenVertexArrays(1, &VAOBlock1);
-    glGenVertexArrays(1, &VAOBlock2);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &VBOBlock1);
-    glGenBuffers(1, &VBOBlock2);
     glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
@@ -204,13 +266,10 @@ int main()
     // no longer needed to flip the images that will load
     stbi_set_flip_vertically_on_load(false);
 
-    Player player1 = Player(-0.98f);
-
-    Player player2 = Player(0.98f);
-
-    PlayerRenderer renderer1 = PlayerRenderer(player1, blockShader);
-
-    PlayerRenderer renderer2 = PlayerRenderer(player2, blockShader);
+    PlayerRenderer playerRenderers[] = {
+        PlayerRenderer(Player(-0.98f, GLFW_KEY_UP, GLFW_KEY_DOWN), blockShader),
+        PlayerRenderer(Player(0.98f, GLFW_KEY_W, GLFW_KEY_S), blockShader),
+    };
 
     const float playerVertices[] = {
         // positions       
@@ -218,26 +277,8 @@ int main()
          -0.98f, 0.2f, 0.0f,
     };
 
-    glBindVertexArray(VAOBlock1);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOBlock1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(player1.playerVertices), player1.playerVertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(VAOBlock2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBOBlock2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(player2.playerVertices), player2.playerVertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    //ourShader.use();
 
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
@@ -245,7 +286,6 @@ int main()
     float alpha = 0.2f;
 
     unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-    unsigned int blockMovementLoc = glGetUniformLocation(blockShader.ID, "movementTransform");
 
     float translationOffset = 0.5f;
 
@@ -256,7 +296,12 @@ int main()
     {
         // input
         // -----
-        processInput(window, alpha);
+        processInput(window);
+
+        for (PlayerRenderer& renderer : playerRenderers)
+        {
+            renderer.ProcessInput(window);
+        }
 
         // render
         // ------
@@ -294,7 +339,6 @@ int main()
             rightDirection = false;
         }
 
-        
         trans = glm::translate(trans, glm::vec3(translationOffset, 0.0f, 0.0f));
 
         trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -305,20 +349,10 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
-        renderer1.RenderPlayer();
-        renderer2.RenderPlayer();
-        
-
-        //glUniform1f(blockMovementLoc, positionBlock1);
-        //glBindVertexArray(VAOBlock1);
-        //glLineWidth(10.0f);
-        //glDrawArrays(GL_LINES, 0, 2);
-
-        //glUniform1f(blockMovementLoc, positionBlock2);
-        //glBindVertexArray(VAOBlock2);
-        //glLineWidth(10.0f);
-        //glDrawArrays(GL_LINES, 0, 2);
+        for (PlayerRenderer& renderer : playerRenderers)
+        {
+            renderer.RenderPlayer();
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -340,29 +374,11 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window, float& alpha)
+void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE)== GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
-    }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    {
-        alpha += 0.01f;
-        positionBlock1 += 0.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    {
-        alpha -= 0.01f;
-        positionBlock1 -= 0.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        positionBlock2 += 0.01f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        positionBlock2 -= 0.01f;
     }
 }
 
