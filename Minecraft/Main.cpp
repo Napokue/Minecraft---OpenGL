@@ -15,11 +15,11 @@ private:
     const float locationBoundsOffset = 0.2f;
     int upKey;
     int downKey;
+    float playerLocation = 0.0f;
 
 public:
     const float playerWidth = 10.0f;
     float playerVertices[6];
-    float playerLocation = 0.0f;
 
     Player(float startLocation, int glfwUpKey, int glfwDownKey)
         : playerVertices{
@@ -44,6 +44,11 @@ public:
     float GetUpLocation()
     {
         return playerLocation + locationBoundsOffset;
+    }
+
+    float GetNoOffsetLocation()
+    {
+        return playerLocation;
     }
     
     float GetDownLocation()
@@ -109,7 +114,7 @@ public:
     {
         playerShader.use();
 
-        glUniform1f(playerMovementUniform, player.playerLocation);
+        glUniform1f(playerMovementUniform, player.GetNoOffsetLocation());
         glBindVertexArray(VAO);
         glLineWidth(player.playerWidth);
         glDrawArrays(GL_LINES, 0, 2);
