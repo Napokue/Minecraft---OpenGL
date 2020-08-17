@@ -30,7 +30,7 @@
     <ClCompile Include="Header Files\stb_image_init.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Block.vert">
+    <ClCompile Include="Shaders\Player.vert">
       <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
@@ -46,7 +46,7 @@
     <None Include="Shaders\Fragment.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\Vertex.vert">
+    <None Include="Shaders\Ball.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

@@ -46,14 +46,19 @@ public:
         return playerLocation + locationBoundsOffset;
     }
 
+    float GetDownLocation()
+    {
+        return playerLocation - locationBoundsOffset;
+    }
+
     float GetNoOffsetLocation()
     {
         return playerLocation;
     }
     
-    float GetDownLocation()
+    glm::vec2 GetBoundsLocation()
     {
-        return playerLocation - locationBoundsOffset;
+        return glm::vec2(GetUpLocation(), GetDownLocation());
     }
 
     float MoveUp(float amount)
@@ -139,6 +144,85 @@ public:
     }
 };
 
+struct Ball {
+private:
+    const float radius;
+    glm::vec2 position;
+    float ballVertices[];
+public:
+    
+    Ball(glm::vec2 startPosition, float radius = 0.2f)
+        : position(startPosition),
+        radius(radius)
+        //ballVertices{
+        //    position.y , position.x + radius, 0.0f,
+        //    position.y - radius, position.x - radius, 0.0f,
+        //    position.y + radius, position.x - radius, 0.0f,
+        //}
+    {
+
+    }
+
+    void* getVertices()
+    {
+        ballVertices = {
+            position.y , position.x + radius, 0.0f,
+            position.y - radius, position.x - radius, 0.0f,
+            position.y + radius, position.x - radius, 0.0f,
+
+        };
+
+        return ballVertices;
+    }
+};
+
+class BallRenderer {
+private:
+    unsigned int VAO;
+    unsigned int VBO;
+    unsigned int playerMovementUniform;
+public:
+    Ball ball;
+    Shader ballShader;
+
+    BallRenderer(Ball ball, Shader ballShader)
+        : ball(ball), ballShader(ballShader)
+    {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+        float vertices[9] = ball.getVertices();
+
+        //glBufferData(GL_ARRAY_BUFFER, sizeof((float[])ball.getVertices()), ball.ballVertices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        //playerMovementUniform = glGetUniformLocation(ballShader.ID, "movementTransform");
+    }
+
+    void RenderBall()
+    {
+        ballShader.use();
+
+        //glUniform1f(playerMovementUniform, player.GetNoOffsetLocation());
+        glBindVertexArray(VAO);
+        //glLineWidth(ball.playerWidth);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
+
+    ~BallRenderer()
+    {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+    }
+};
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
@@ -179,18 +263,18 @@ int main()
         return -1;
     }
 
-    Shader ourShader("Shaders/Vertex.vert", "Shaders/Fragment.frag");
-    Shader blockShader("Shaders/Block.vert", "Shaders/Fragment.frag");
+    Shader ballShader("Shaders/Ball.vert", "Shaders/Fragment.frag");
+    Shader playerShader("Shaders/Player.vert", "Shaders/Fragment.frag");
     
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
 
     const float vertices[] = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+         0.1f,  0.1f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+         0.1f, -0.1f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.1f, -0.1f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.1f,  0.1f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
     };
 
     unsigned int indices[] = {
@@ -272,8 +356,8 @@ int main()
     stbi_set_flip_vertically_on_load(false);
 
     PlayerRenderer playerRenderers[] = {
-        PlayerRenderer(Player(-0.98f, GLFW_KEY_UP, GLFW_KEY_DOWN), blockShader),
-        PlayerRenderer(Player(0.98f, GLFW_KEY_W, GLFW_KEY_S), blockShader),
+        PlayerRenderer(Player(-0.98f, GLFW_KEY_UP, GLFW_KEY_DOWN), playerShader),
+        PlayerRenderer(Player(0.98f, GLFW_KEY_W, GLFW_KEY_S), playerShader),
     };
 
     const float playerVertices[] = {
@@ -285,16 +369,18 @@ int main()
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    ourShader.setInt("texture1", 0);
-    ourShader.setInt("texture2", 1);
+    ballShader.setInt("texture1", 0);
+    ballShader.setInt("texture2", 1);
 
     float alpha = 0.2f;
 
-    unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+    unsigned int transformLoc = glGetUniformLocation(ballShader.ID, "transform");
 
     float translationOffset = 0.5f;
 
     bool rightDirection = false;
+
+    BallRenderer renderer = BallRenderer(Ball(glm::vec2(0.8f, 0.0f)), ballShader);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -313,19 +399,9 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textures[0]);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textures[1]);
-
-        ourShader.use();
-
-        ourShader.setFloat("alpha", alpha);
-
         glm::mat4 trans = glm::mat4(1.0f);
 
-
+        bool shouldCheckBounds = false;
         if (rightDirection)
         {
             translationOffset += 0.01f;
@@ -335,29 +411,47 @@ int main()
             translationOffset -= 0.01f;
         }
 
-        if (translationOffset <= -0.5f)
+        if (translationOffset <= -0.9f)
         {
             rightDirection = true;
+            shouldCheckBounds = true;
         }
-        else if (translationOffset >= 0.5f)
+        else if (translationOffset >= 0.9f)
         {
             rightDirection = false;
+            shouldCheckBounds = true;
         }
 
         trans = glm::translate(trans, glm::vec3(translationOffset, 0.0f, 0.0f));
 
-        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        //trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        ourShader.use();
+        for (PlayerRenderer& renderer : playerRenderers)
+        {
+            if (shouldCheckBounds)
+            {
+                glm::vec2 playerBounds = renderer.player.GetBoundsLocation();
+                //if (playerBounds.x >= )
+            }
+            renderer.RenderPlayer();
+        }
+
+        renderer.RenderBall();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[0]);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+        ballShader.use();
+
+        ballShader.setFloat("alpha", alpha);
+
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
         
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        for (PlayerRenderer& renderer : playerRenderers)
-        {
-            renderer.RenderPlayer();
-        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
