@@ -146,33 +146,72 @@ public:
 
 struct Ball {
 private:
+    const float speed = 0.02f;
     const float radius;
     glm::vec2 position;
-    float ballVertices[];
+    // first  index: true = up   | false = down
+    // second index: true = left | false = right
+    bool direction[2];
 public:
     
     Ball(glm::vec2 startPosition, float radius = 0.2f)
         : position(startPosition),
-        radius(radius)
-        //ballVertices{
-        //    position.y , position.x + radius, 0.0f,
-        //    position.y - radius, position.x - radius, 0.0f,
-        //    position.y + radius, position.x - radius, 0.0f,
-        //}
+        radius(radius),
+        direction{false, false}
     {
 
     }
 
-    void* getVertices()
+    float* getVertices()
     {
-        ballVertices = {
+        float ballVertices[9] = {
             position.y , position.x + radius, 0.0f,
             position.y - radius, position.x - radius, 0.0f,
             position.y + radius, position.x - radius, 0.0f,
-
         };
 
         return ballVertices;
+    }
+
+    void movePosition()
+    {
+        if (direction[0])
+        {
+            position.y += speed;
+            if (position.y >= 1.0f)
+            {
+                position.y = 1.0f;
+                direction[0] = false;
+            }
+        }
+        else
+        {
+            position.y -= speed;
+            if (position.y <= -1.0f)
+            {
+                position.y = -1.0f;
+                direction[0] = true;
+            }
+        }
+
+        if (direction[1])
+        {
+            position.x += speed;
+            if (position.x >= 1.0f)
+            {
+                position.x = 1.0f;
+                direction[1] = false;
+            }
+        }
+        else
+        {
+            position.x -= speed;
+            if (position.x <= -1.0f)
+            {
+                position.x = -1.0f;
+                direction[1] = true;
+            }
+        }
     }
 };
 
@@ -194,24 +233,35 @@ public:
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-        float vertices[9] = ball.getVertices();
+        float* verticesPointer = ball.getVertices();
+        float vertices[9];
+        for (int i = 0; i < 9; i++)
+        {
+            vertices[i] = *(verticesPointer + i);
+        }
 
-        //glBufferData(GL_ARRAY_BUFFER, sizeof((float[])ball.getVertices()), ball.ballVertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        //playerMovementUniform = glGetUniformLocation(ballShader.ID, "movementTransform");
     }
 
     void RenderBall()
     {
+        ball.movePosition();
         ballShader.use();
 
-        //glUniform1f(playerMovementUniform, player.GetNoOffsetLocation());
+        float* verticesPointer = ball.getVertices();
+        float vertices[9];
+        for (int i = 0; i < 9; i++)
+        {
+            vertices[i] = *(verticesPointer + i);
+        }
+
         glBindVertexArray(VAO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), &vertices);
         //glLineWidth(ball.playerWidth);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
@@ -380,7 +430,7 @@ int main()
 
     bool rightDirection = false;
 
-    BallRenderer renderer = BallRenderer(Ball(glm::vec2(0.8f, 0.0f)), ballShader);
+    BallRenderer renderer = BallRenderer(Ball(glm::vec2(0.8f, 0.6f)), ballShader);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -422,7 +472,7 @@ int main()
             shouldCheckBounds = true;
         }
 
-        trans = glm::translate(trans, glm::vec3(translationOffset, 0.0f, 0.0f));
+        //trans = glm::translate(trans, glm::vec3(translationOffset, 0.0f, 0.0f));
 
         //trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 
